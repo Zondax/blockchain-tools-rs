@@ -18,6 +18,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 pub mod errors;
 
 use crate::errors::BIP44PathError;
+use core::fmt;
 
 const HARDENED_BIT: u32 = 1 << 31;
 
@@ -82,6 +83,19 @@ impl BIP44Path {
     }
 }
 
+impl fmt::Display for BIP44Path {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "m")?;
+        for i in 0..5 {
+            write!(f, "/{}", self.0[i] & 0x7FFF_FFFF)?;
+            if self.0[i] >= 0x8000_0000 {
+                write!(f, "'")?
+            }
+        }
+        write!(f, "")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::errors::BIP44PathError;
@@ -101,6 +115,20 @@ mod tests {
         assert_eq!(result.0[2], 0);
         assert_eq!(result.0[3], 0);
         assert_eq!(result.0[4], 0);
+    }
+
+    #[test]
+    fn display_path() {
+        let path_string = "m/44'/461'/0/0/0";
+        let result = BIP44Path::from_string(path_string).unwrap();
+        assert_eq!(format!("{}", result), path_string);
+    }
+
+    #[test]
+    fn display_path_hardened() {
+        let path_string = "m/44'/461'/0'/0'/0'";
+        let result = BIP44Path::from_string(path_string).unwrap();
+        assert_eq!(format!("{}", result), path_string);
     }
 
     #[test]
